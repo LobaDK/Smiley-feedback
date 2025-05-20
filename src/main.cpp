@@ -11,9 +11,9 @@
 // Temp def
 #define LED_LIGHT_1 26
 
-#define LED_LIGHT_2 2
-#define LED_LIGHT_3 3
-#define LED_LIGHT_4 4
+#define LED_LIGHT_2 25
+#define LED_LIGHT_3 33
+#define LED_LIGHT_4 32
 
 
 ezButton buttonVeryGood(GPIO_NUM_15);
@@ -74,6 +74,17 @@ void print_wakeup_reason(){
   }
 }
 
+void toggle_led(int LEDPin) {
+  isLocked = !isLocked;
+  activePin = LEDPin;
+  if (isLocked) {
+    digitalWrite(LEDPin, HIGH);
+  }
+  else {
+    digitalWrite(LEDPin, LOW);
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   buttonVeryGood.setDebounceTime(50);
@@ -82,6 +93,9 @@ void setup() {
   buttonVeryBad.setDebounceTime(50);
   delay(1000);
   pinMode(LED_LIGHT_1, OUTPUT);
+  pinMode(LED_LIGHT_2, OUTPUT);
+  pinMode(LED_LIGHT_3, OUTPUT);
+  pinMode(LED_LIGHT_4, OUTPUT);
 
   ++bootCount;
   Serial.println("Boot number: " + String(bootCount));
@@ -99,22 +113,22 @@ void loop() {
     if (buttonVeryGood.isPressed()){
       Serial.println("Very Good button pressed");
       countdownStart = millis();
-      isLocked = true;
-      activePin = LED_LIGHT_1;
-      digitalWrite(LED_LIGHT_1, HIGH);
+      toggle_led(LED_LIGHT_1);
       }
     if (buttonGood.isPressed()){
       Serial.println("Good button pressed");
       countdownStart = millis();
-      
+      toggle_led(LED_LIGHT_2);
     }
     if (buttonBad.isPressed()){
       Serial.println("Bad button pressed");
       countdownStart = millis();
+      toggle_led(LED_LIGHT_3);
     }
     if (buttonVeryBad.isPressed()){
       Serial.println("Very Bad button pressed");
       countdownStart = millis();
+      toggle_led(LED_LIGHT_4);
     }
   }
   
@@ -129,9 +143,7 @@ void loop() {
   }
 
   if(elapsed >= 7000 && isLocked){
-    Serial.println(elapsed);
-    digitalWrite(activePin, LOW);
-    isLocked = false;
+    toggle_led(activePin);
   }
 
   if (remaining <= 0) {

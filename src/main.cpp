@@ -8,6 +8,14 @@
 #define WAKEUP_GPIO_4 GPIO_NUM_4
 #define WAKEUP_GPIO_13 GPIO_NUM_13
 
+// Temp def
+#define LED_LIGHT_1 26
+
+#define LED_LIGHT_2 2
+#define LED_LIGHT_3 3
+#define LED_LIGHT_4 4
+
+
 ezButton buttonVeryGood(GPIO_NUM_15);
 ezButton buttonGood(GPIO_NUM_2);
 ezButton buttonBad(GPIO_NUM_4);
@@ -23,6 +31,9 @@ uint64_t bitmask =
   BUTTON_PIN_BITMASK(WAKEUP_GPIO_13);
 
 RTC_DATA_ATTR int bootCount = 0;
+
+bool isLocked = false;
+int activePin = 0;
 
 void print_GPIO_wake_up(){
   uint64_t GPIO_reason = esp_sleep_get_ext1_wakeup_status();
@@ -70,6 +81,7 @@ void setup() {
   buttonBad.setDebounceTime(50);
   buttonVeryBad.setDebounceTime(50);
   delay(1000);
+  pinMode(LED_LIGHT_1, OUTPUT);
 
   ++bootCount;
   Serial.println("Boot number: " + String(bootCount));
@@ -83,21 +95,27 @@ void loop() {
   buttonBad.loop();
   buttonVeryBad.loop();
 
-  if (buttonVeryGood.isPressed()){
-    Serial.println("Very Good button pressed");
-    countdownStart = millis();
+  if(!isLocked){
+    if (buttonVeryGood.isPressed()){
+      Serial.println("Very Good button pressed");
+      countdownStart = millis();
+      isLocked = true;
+      activePin = LED_LIGHT_1;
+      digitalWrite(LED_LIGHT_1, HIGH);
+      }
+    if (buttonGood.isPressed()){
+      Serial.println("Good button pressed");
+      countdownStart = millis();
+      
     }
-  if (buttonGood.isPressed()){
-    Serial.println("Good button pressed");
-    countdownStart = millis();
-  }
-  if (buttonBad.isPressed()){
-    Serial.println("Bad button pressed");
-    countdownStart = millis();
-  }
-  if (buttonVeryBad.isPressed()){
-    Serial.println("Very Bad button pressed");
-    countdownStart = millis();
+    if (buttonBad.isPressed()){
+      Serial.println("Bad button pressed");
+      countdownStart = millis();
+    }
+    if (buttonVeryBad.isPressed()){
+      Serial.println("Very Bad button pressed");
+      countdownStart = millis();
+    }
   }
   
   unsigned long elapsed = millis() - countdownStart;
@@ -108,6 +126,12 @@ void loop() {
     Serial.print("Will sleep in: ");
     Serial.println(remaining);
     lastSecondPrinted = remaining;
+  }
+
+  if(elapsed >= 7000 && isLocked){
+    Serial.println(elapsed);
+    digitalWrite(activePin, LOW);
+    isLocked = false;
   }
 
   if (remaining <= 0) {

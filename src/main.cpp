@@ -4,15 +4,26 @@
 #define BUTTON_PIN_BITMASK(GPIO) (1ULL << GPIO)
 #define WAKEUP_GPIO_15 GPIO_NUM_15
 #define WAKEUP_GPIO_2 GPIO_NUM_2
+#define WAKEUP_GPIO_4 GPIO_NUM_4
+#define WAKEUP_GPIO_14 GPIO_NUM_14
 
-uint64_t bitmask = BUTTON_PIN_BITMASK(WAKEUP_GPIO_15) | BUTTON_PIN_BITMASK(WAKEUP_GPIO_2);
+uint64_t bitmask =
+  BUTTON_PIN_BITMASK(WAKEUP_GPIO_15) |
+  BUTTON_PIN_BITMASK(WAKEUP_GPIO_2)  |
+  BUTTON_PIN_BITMASK(WAKEUP_GPIO_4)     |
+  BUTTON_PIN_BITMASK(WAKEUP_GPIO_14);
 
 RTC_DATA_ATTR int bootCount = 0;
 
 void print_GPIO_wake_up(){
-  int GPIO_reason = esp_sleep_get_ext1_wakeup_status();
-  Serial.print("GPIO that triggered the wake up: GPIO ");
-  Serial.println((log(GPIO_reason))/log(2), 0);
+  uint64_t GPIO_reason = esp_sleep_get_ext1_wakeup_status();
+  Serial.print("GPIO that triggered the wake up: GPIO:");
+  if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_15)) Serial.print(" 15");
+  if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_2))  Serial.print(" 2");
+  if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_4))  Serial.print(" 4");
+  if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_14)) Serial.print(" 14");
+  Serial.println();
+
 }
 
 void print_wakeup_reason(){
@@ -57,6 +68,10 @@ void setup() {
   rtc_gpio_pullup_dis(WAKEUP_GPIO_15);
   rtc_gpio_pulldown_en(WAKEUP_GPIO_2);
   rtc_gpio_pullup_dis(WAKEUP_GPIO_2);
+  rtc_gpio_pulldown_en(WAKEUP_GPIO_4);
+  rtc_gpio_pullup_dis(WAKEUP_GPIO_4);
+  rtc_gpio_pulldown_en(WAKEUP_GPIO_14);
+  rtc_gpio_pullup_dis(WAKEUP_GPIO_14);
 
   Serial.println("Going to sleep now");
   esp_deep_sleep_start();

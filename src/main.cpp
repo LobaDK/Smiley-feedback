@@ -1,9 +1,18 @@
 #include <Arduino.h>
 #include <driver/rtc_io.h>
+#include <ezButton.h>
 
 #define BUTTON_PIN_BITMASK(GPIO) (1ULL << GPIO)
 #define WAKEUP_GPIO_15 GPIO_NUM_15
 #define WAKEUP_GPIO_2 GPIO_NUM_2
+
+ezButton buttonVeryGood(GPIO_NUM_15);
+ezButton buttonGood(GPIO_NUM_2);
+ezButton buttonBad(GPIO_NUM_4);
+ezButton buttonVeryBad(GPIO_NUM_13);
+
+unsigned long countdownStart = 0;
+const unsigned long countdownDuration = 30000;
 
 uint64_t bitmask = BUTTON_PIN_BITMASK(WAKEUP_GPIO_15) | BUTTON_PIN_BITMASK(WAKEUP_GPIO_2);
 
@@ -45,22 +54,59 @@ void print_wakeup_reason(){
 
 void setup() {
   Serial.begin(115200);
+  buttonVeryGood.setDebounceTime(50);
+  buttonGood.setDebounceTime(50);
+  buttonBad.setDebounceTime(50);
+  buttonVeryBad.setDebounceTime(50);
   delay(1000);
 
   ++bootCount;
   Serial.println("Boot number: " + String(bootCount));
 
   print_wakeup_reason();
-  
-  esp_sleep_enable_ext1_wakeup(bitmask, ESP_EXT1_WAKEUP_ANY_HIGH);
-  rtc_gpio_pulldown_en(WAKEUP_GPIO_15);
-  rtc_gpio_pullup_dis(WAKEUP_GPIO_15);
-  rtc_gpio_pulldown_en(WAKEUP_GPIO_2);
-  rtc_gpio_pullup_dis(WAKEUP_GPIO_2);
-
-  Serial.println("Going to sleep now");
-  esp_deep_sleep_start();
 }
 
 void loop() {
+  buttonVeryGood.loop();
+  buttonGood.loop();
+  buttonBad.loop();
+  buttonVeryBad.loop();
+
+  if (buttonVeryGood.isPressed()){
+    Serial.println("Very Good button pressed");
+    countdownStart = millis();
+    }
+  if (buttonGood.isPressed()){
+    Serial.println("Good button pressed");
+    countdownStart = millis();
+  }
+  if (buttonBad.isPressed()){
+    Serial.println("Bad button pressed");
+    countdownStart = millis();
+  }
+  if (buttonVeryBad.isPressed()){
+    Serial.println("Very Bad button pressed");
+    countdownStart = millis();
+  }
+  
+  unsigned long elapsed = millis() - countdownStart;
+  unsigned long remaining = (countdownDuration - elapsed) / 1000;
+  static unsigned long lastSecondPrinted = 0;
+
+  if (remaining != lastSecondPrinted) {
+    Serial.print("Will sleep in: ");
+    Serial.println(remaining);
+    lastSecondPrinted = remaining;
+  }
+
+  if (remaining <= 0) {
+    esp_sleep_enable_ext1_wakeup(bitmask, ESP_EXT1_WAKEUP_ANY_HIGH);
+    rtc_gpio_pulldown_en(WAKEUP_GPIO_15);
+    rtc_gpio_pullup_dis(WAKEUP_GPIO_15);
+    rtc_gpio_pulldown_en(WAKEUP_GPIO_2);
+    rtc_gpio_pullup_dis(WAKEUP_GPIO_2);
+
+    Serial.println("Going to sleep now");
+    esp_deep_sleep_start();
+  }
 }

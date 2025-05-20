@@ -6,7 +6,7 @@
 #define WAKEUP_GPIO_15 GPIO_NUM_15
 #define WAKEUP_GPIO_2 GPIO_NUM_2
 #define WAKEUP_GPIO_4 GPIO_NUM_4
-#define WAKEUP_GPIO_14 GPIO_NUM_14
+#define WAKEUP_GPIO_13 GPIO_NUM_13
 
 ezButton buttonVeryGood(GPIO_NUM_15);
 ezButton buttonGood(GPIO_NUM_2);
@@ -20,7 +20,7 @@ uint64_t bitmask =
   BUTTON_PIN_BITMASK(WAKEUP_GPIO_15) |
   BUTTON_PIN_BITMASK(WAKEUP_GPIO_2)  |
   BUTTON_PIN_BITMASK(WAKEUP_GPIO_4)     |
-  BUTTON_PIN_BITMASK(WAKEUP_GPIO_14);
+  BUTTON_PIN_BITMASK(WAKEUP_GPIO_13);
 
 RTC_DATA_ATTR int bootCount = 0;
 
@@ -30,7 +30,7 @@ void print_GPIO_wake_up(){
   if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_15)) Serial.print(" 15");
   if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_2))  Serial.print(" 2");
   if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_4))  Serial.print(" 4");
-  if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_14)) Serial.print(" 14");
+  if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_13)) Serial.print(" 13");
   Serial.println();
 
 }

@@ -1,6 +1,18 @@
 #include <Arduino.h>
 #include <driver/rtc_io.h>
 #include <ezButton.h>
+#include "time.h"
+#include "wifi.h"
+
+
+const char* ssid = "IoT_H3/4";
+const char* password = "98806829";
+
+// NTP
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = 3600;
+const int   daylightOffset_sec = 3600;
+
 
 #define BUTTON_PIN_BITMASK(GPIO) (1ULL << GPIO)
 #define WAKEUP_GPIO_15 GPIO_NUM_15
@@ -20,7 +32,7 @@ ezButton buttonBad(GPIO_NUM_4);
 ezButton buttonVeryBad(GPIO_NUM_13);
 
 unsigned long countdownStart = 0;
-const unsigned long countdownDuration = 30000;
+const unsigned long countdownDuration = 10000;
 
 uint64_t bitmask =
   BUTTON_PIN_BITMASK(WAKEUP_GPIO_15) |
@@ -32,6 +44,8 @@ RTC_DATA_ATTR int bootCount = 0;
 
 bool isLocked = false;
 int activePin = 0;
+
+
 
 void print_GPIO_wake_up(){
   uint64_t GPIO_reason = esp_sleep_get_ext1_wakeup_status();
@@ -83,8 +97,59 @@ void toggle_led(int LEDPin) {
   }
 }
 
+void printSimpleTime() {
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  char buf[32];
+  // Format: MM,HH,DD,YYYY
+  strftime(buf, sizeof(buf), "Time: %H:%M:%S %m/%d/%Y", &timeinfo);
+
+
+  Serial.println(buf);
+}
+
+
+void initWiFi(){
+  Serial.print("Waiting for WiFi");
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("WiFi connected.");
+}
+
+
+void initTime(){
+  // Configures clock
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  Serial.print("Waiting for time sync");
+
+  // Time() returns seconds since 1970 epoch time.
+  // When startet it might be only a few seconds or 0
+  // If time jumps over over 57 600 seconds then time should be synced
+  time_t now = time(nullptr);
+  while (now < 8 * 3600 * 2) {
+    Serial.print(".");
+    delay(500);
+    now = time(nullptr);
+  }
+  Serial.println();
+}
+
 void setup() {
   Serial.begin(115200);
+
+  initWiFi();
+
+  // Setup time
+  initTime();
+  printSimpleTime();
+  
   buttonVeryGood.setDebounceTime(50);
   buttonGood.setDebounceTime(50);
   buttonBad.setDebounceTime(50);
@@ -145,6 +210,11 @@ void loop() {
   }
 
   if (remaining <= 0) {
+
+    // Disconnect WiFi
+    WiFi.disconnect(true);
+
+    // Configure your EXT1 wake sources
     esp_sleep_enable_ext1_wakeup(bitmask, ESP_EXT1_WAKEUP_ANY_HIGH);
     rtc_gpio_pulldown_en(WAKEUP_GPIO_15);
     rtc_gpio_pullup_dis(WAKEUP_GPIO_15);

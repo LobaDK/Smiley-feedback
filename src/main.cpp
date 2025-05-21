@@ -8,9 +8,7 @@
 #define WAKEUP_GPIO_4 GPIO_NUM_4
 #define WAKEUP_GPIO_13 GPIO_NUM_13
 
-// Temp def
 #define LED_LIGHT_1 26
-
 #define LED_LIGHT_2 25
 #define LED_LIGHT_3 33
 #define LED_LIGHT_4 32
@@ -152,6 +150,10 @@ void loop() {
     rtc_gpio_pullup_dis(WAKEUP_GPIO_15);
     rtc_gpio_pulldown_en(WAKEUP_GPIO_2);
     rtc_gpio_pullup_dis(WAKEUP_GPIO_2);
+    rtc_gpio_pulldown_en(WAKEUP_GPIO_4);
+    rtc_gpio_pullup_dis(WAKEUP_GPIO_4);
+    rtc_gpio_pulldown_en(WAKEUP_GPIO_13);
+    rtc_gpio_pullup_dis(WAKEUP_GPIO_13);
 
     Serial.println("Going to sleep now");
     esp_deep_sleep_start();

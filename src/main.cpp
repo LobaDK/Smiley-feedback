@@ -8,6 +8,12 @@
 #define WAKEUP_GPIO_4 GPIO_NUM_4
 #define WAKEUP_GPIO_13 GPIO_NUM_13
 
+#define LED_LIGHT_1 26
+#define LED_LIGHT_2 25
+#define LED_LIGHT_3 33
+#define LED_LIGHT_4 32
+
+
 ezButton buttonVeryGood(GPIO_NUM_15);
 ezButton buttonGood(GPIO_NUM_2);
 ezButton buttonBad(GPIO_NUM_4);
@@ -23,6 +29,9 @@ uint64_t bitmask =
   BUTTON_PIN_BITMASK(WAKEUP_GPIO_13);
 
 RTC_DATA_ATTR int bootCount = 0;
+
+bool isLocked = false;
+int activePin = 0;
 
 void print_GPIO_wake_up(){
   uint64_t GPIO_reason = esp_sleep_get_ext1_wakeup_status();
@@ -63,6 +72,17 @@ void print_wakeup_reason(){
   }
 }
 
+void toggle_led(int LEDPin) {
+  isLocked = !isLocked;
+  activePin = LEDPin;
+  if (isLocked) {
+    digitalWrite(LEDPin, HIGH);
+  }
+  else {
+    digitalWrite(LEDPin, LOW);
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   buttonVeryGood.setDebounceTime(50);
@@ -70,6 +90,10 @@ void setup() {
   buttonBad.setDebounceTime(50);
   buttonVeryBad.setDebounceTime(50);
   delay(1000);
+  pinMode(LED_LIGHT_1, OUTPUT);
+  pinMode(LED_LIGHT_2, OUTPUT);
+  pinMode(LED_LIGHT_3, OUTPUT);
+  pinMode(LED_LIGHT_4, OUTPUT);
 
   ++bootCount;
   Serial.println("Boot number: " + String(bootCount));
@@ -83,21 +107,27 @@ void loop() {
   buttonBad.loop();
   buttonVeryBad.loop();
 
-  if (buttonVeryGood.isPressed()){
-    Serial.println("Very Good button pressed");
-    countdownStart = millis();
+  if(!isLocked){
+    if (buttonVeryGood.isPressed()){
+      Serial.println("Very Good button pressed");
+      countdownStart = millis();
+      toggle_led(LED_LIGHT_1);
+      }
+    if (buttonGood.isPressed()){
+      Serial.println("Good button pressed");
+      countdownStart = millis();
+      toggle_led(LED_LIGHT_2);
     }
-  if (buttonGood.isPressed()){
-    Serial.println("Good button pressed");
-    countdownStart = millis();
-  }
-  if (buttonBad.isPressed()){
-    Serial.println("Bad button pressed");
-    countdownStart = millis();
-  }
-  if (buttonVeryBad.isPressed()){
-    Serial.println("Very Bad button pressed");
-    countdownStart = millis();
+    if (buttonBad.isPressed()){
+      Serial.println("Bad button pressed");
+      countdownStart = millis();
+      toggle_led(LED_LIGHT_3);
+    }
+    if (buttonVeryBad.isPressed()){
+      Serial.println("Very Bad button pressed");
+      countdownStart = millis();
+      toggle_led(LED_LIGHT_4);
+    }
   }
   
   unsigned long elapsed = millis() - countdownStart;
@@ -110,12 +140,20 @@ void loop() {
     lastSecondPrinted = remaining;
   }
 
+  if(elapsed >= 7000 && isLocked){
+    toggle_led(activePin);
+  }
+
   if (remaining <= 0) {
     esp_sleep_enable_ext1_wakeup(bitmask, ESP_EXT1_WAKEUP_ANY_HIGH);
     rtc_gpio_pulldown_en(WAKEUP_GPIO_15);
     rtc_gpio_pullup_dis(WAKEUP_GPIO_15);
     rtc_gpio_pulldown_en(WAKEUP_GPIO_2);
     rtc_gpio_pullup_dis(WAKEUP_GPIO_2);
+    rtc_gpio_pulldown_en(WAKEUP_GPIO_4);
+    rtc_gpio_pullup_dis(WAKEUP_GPIO_4);
+    rtc_gpio_pulldown_en(WAKEUP_GPIO_13);
+    rtc_gpio_pullup_dis(WAKEUP_GPIO_13);
 
     Serial.println("Going to sleep now");
     esp_deep_sleep_start();

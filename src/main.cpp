@@ -7,8 +7,6 @@
 const char* ssid     = "IoT_H3/4";
 const char* password = "98806829";
 
-
-
 // Wakeup buttons
 #define BUTTON_PIN_BITMASK(GPIO) (1ULL << GPIO)
 #define WAKEUP_GPIO_15 GPIO_NUM_15
@@ -94,19 +92,23 @@ void toggle_led(int LEDPin) {
 void setup() {
   Serial.begin(115200);
 
+  delay(1000);
+
+  WiFi.persistent(false);
+
   WiFi.begin(ssid, password);
+  Serial.println("Connecting to WiFi...");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
   Serial.println("\nWi-Fi connected");
 
-
   buttonVeryGood.setDebounceTime(50);
   buttonGood.setDebounceTime(50);
   buttonBad.setDebounceTime(50);
   buttonVeryBad.setDebounceTime(50);
-  delay(1000);
+  
   pinMode(LED_LIGHT_1, OUTPUT);
   pinMode(LED_LIGHT_2, OUTPUT);
   pinMode(LED_LIGHT_3, OUTPUT);

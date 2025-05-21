@@ -1,7 +1,15 @@
 #include <Arduino.h>
 #include <driver/rtc_io.h>
 #include <ezButton.h>
+#include <WiFi.h>
 
+// Wi-Fi
+const char* ssid     = "IoT_H3/4";
+const char* password = "98806829";
+
+
+
+// Wakeup buttons
 #define BUTTON_PIN_BITMASK(GPIO) (1ULL << GPIO)
 #define WAKEUP_GPIO_15 GPIO_NUM_15
 #define WAKEUP_GPIO_2 GPIO_NUM_2
@@ -85,6 +93,15 @@ void toggle_led(int LEDPin) {
 
 void setup() {
   Serial.begin(115200);
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWi-Fi connected");
+
+
   buttonVeryGood.setDebounceTime(50);
   buttonGood.setDebounceTime(50);
   buttonBad.setDebounceTime(50);

@@ -213,6 +213,8 @@ void setup() {
   // Setup time
   initTime();
   printSimpleTime();
+
+  initMQTT();
   
   buttonVeryGood.setDebounceTime(50);
   buttonGood.setDebounceTime(50);

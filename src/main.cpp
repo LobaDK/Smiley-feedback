@@ -152,7 +152,6 @@ void initMQTT(){
 }
 
 void publishMessage(char* button_pressed, struct tm timeStamp){
-
   char ts[32];
   strftime(ts, sizeof(ts), "%Y-%m-%dT%H:%M:%SZ", &timeStamp);
 
@@ -232,6 +231,7 @@ void setup() {
 }
 
 void loop() {
+  client.loop();
   buttonVeryGood.loop();
   buttonGood.loop();
   buttonBad.loop();

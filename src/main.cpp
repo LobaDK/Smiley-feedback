@@ -34,6 +34,7 @@ ezButton buttonVeryBad(GPIO_NUM_13);
 
 unsigned long countdownStart = 0;
 const unsigned long countdownDuration = 15000;
+const int LockDuration = 7000;
 
 uint64_t bitmask =
   BUTTON_PIN_BITMASK(WAKEUP_GPIO_15) |
@@ -249,7 +250,7 @@ void loop() {
     lastSecondPrinted = remaining;
   }
 
-  if(elapsed >= 7000 && isLocked){
+  if(elapsed >= LockDuration && isLocked){
     toggle_led(activePin);
   }
 

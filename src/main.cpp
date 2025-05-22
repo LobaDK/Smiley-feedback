@@ -3,10 +3,19 @@
 #include <ezButton.h>
 #include "time.h"
 #include "WiFi.h"
+#include <PubSubClient.h>
 
-
+// WiFi
 const char* ssid = "IoT_H3/4";
 const char* password = "98806829";
+
+// MQTT Broker
+const char *mqtt_broker = "192.168.0.130";
+const char *topic = "sensor/device05";
+const char *mqtt_username = "device05";
+const char *mqtt_password = "device05-password";
+const int mqtt_port = 1883;
+
 
 // NTP
 const char* ntpServer = "pool.ntp.org";
@@ -45,6 +54,9 @@ RTC_DATA_ATTR int bootCount = 0;
 
 bool isLocked = false;
 int activePin = 0;
+
+WiFiClient espClient;
+PubSubClient client(espClient);
 
 
 void print_GPIO_wake_up(){
@@ -111,6 +123,58 @@ void printSimpleTime() {
   Serial.println(buf);
 }
 
+void callback(char *topic, byte *payload, unsigned int length) {
+ Serial.print("Message arrived in topic: ");
+ Serial.println(topic);
+ Serial.print("Message:");
+ for (int i = 0; i < length; i++) {
+     Serial.print((char) payload[i]);
+ }
+ Serial.println();
+ Serial.println("-----------------------");
+}
+
+void initMQTT(){
+ client.setServer(mqtt_broker, mqtt_port);
+ client.setCallback(callback);
+  while (!client.connected()) {
+     String client_id = "esp32-client-";
+     client_id += String(WiFi.macAddress());
+     Serial.printf("The client %s connects to the public mqtt broker\n", client_id.c_str());
+     if (client.connect(client_id.c_str(), mqtt_username, mqtt_password)) {
+         Serial.println("Public emqx mqtt broker connected");
+     } else {
+         Serial.print("failed with state ");
+         Serial.print(client.state());
+         delay(2000);
+     }
+ }
+}
+
+void publishMessage(char* button_pressed, struct tm timeStamp){
+
+  char ts[32];
+  strftime(ts, sizeof(ts), "%Y-%m-%dT%H:%M:%SZ", &timeStamp);
+
+  char payload[128];
+  int len = snprintf(
+    payload, sizeof(payload),
+    "{\"button\":\"%s\",\"timestamp\":\"%s\"}",
+    button_pressed, ts
+  );
+
+  if (len < 0 || len >= sizeof(payload)) {
+    Serial.println("Payload formatting error");
+    return;
+  }
+
+  if (client.publish(topic, payload)) {
+    Serial.printf("Published: %s\n", payload);
+  } else {
+    Serial.println("Publish failed");
+  }
+}
+
 
 void initWiFi(){
   Serial.print("Waiting for WiFi");
@@ -174,25 +238,33 @@ void loop() {
   buttonVeryBad.loop();
 
   if(!isLocked){
+    struct tm timeinfo;
+    if (getLocalTime(&timeinfo)) {
     if (buttonVeryGood.isPressed()){
       Serial.println("Very Good button pressed");
       countdownStart = millis();
       toggle_led(LED_LIGHT_1);
+      publishMessage("Very Good button pressed", timeinfo);
       }
     if (buttonGood.isPressed()){
       Serial.println("Good button pressed");
       countdownStart = millis();
       toggle_led(LED_LIGHT_2);
+      publishMessage("Good button pressed", timeinfo);
     }
     if (buttonBad.isPressed()){
       Serial.println("Bad button pressed");
       countdownStart = millis();
       toggle_led(LED_LIGHT_3);
+      publishMessage("Bad button pressed", timeinfo);
+      
     }
     if (buttonVeryBad.isPressed()){
       Serial.println("Very Bad button pressed");
       countdownStart = millis();
       toggle_led(LED_LIGHT_4);
+      publishMessage("Very Bad button pressed", timeinfo);
+    }
     }
   }
   

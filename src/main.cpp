@@ -161,12 +161,13 @@ void setup() {
   pinMode(LED_LIGHT_3, OUTPUT);
   pinMode(LED_LIGHT_4, OUTPUT);
 
-  ++bootCount;
   Serial.println("Boot number: " + String(bootCount));
 
+  if (bootCount > 0) {
   print_wakeup_reason();
 }
 
+  ++bootCount;
 void loop() {
   buttonVeryGood.loop();
   buttonGood.loop();

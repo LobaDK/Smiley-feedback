@@ -59,8 +59,29 @@ int activePin = 0;
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-WiFiClient espClient;
-PubSubClient client(espClient);
+
+void publishMessage(char* button_pressed, struct tm timeStamp){
+  char ts[32];
+  strftime(ts, sizeof(ts), "%Y-%m-%dT%H:%M:%SZ", &timeStamp);
+
+  char payload[128];
+  int len = snprintf(
+    payload, sizeof(payload),
+    "{\"button\":\"%s\",\"timestamp\":\"%s\"}",
+    button_pressed, ts
+  );
+
+  if (len < 0 || len >= sizeof(payload)) {
+    Serial.println("Payload formatting error");
+    return;
+  }
+
+  if (client.publish(topic, payload)) {
+    Serial.printf("Published: %s\n", payload);
+  } else {
+    Serial.println("Publish failed");
+  }
+}
 
 void toggle_led(int LEDPin) {
   isLocked = !isLocked;
@@ -222,29 +243,6 @@ void initMQTT(){
          delay(2000);
      }
  }
-}
-
-void publishMessage(char* button_pressed, struct tm timeStamp){
-  char ts[32];
-  strftime(ts, sizeof(ts), "%Y-%m-%dT%H:%M:%SZ", &timeStamp);
-
-  char payload[128];
-  int len = snprintf(
-    payload, sizeof(payload),
-    "{\"button\":\"%s\",\"timestamp\":\"%s\"}",
-    button_pressed, ts
-  );
-
-  if (len < 0 || len >= sizeof(payload)) {
-    Serial.println("Payload formatting error");
-    return;
-  }
-
-  if (client.publish(topic, payload)) {
-    Serial.printf("Published: %s\n", payload);
-  } else {
-    Serial.println("Publish failed");
-  }
 }
 
 

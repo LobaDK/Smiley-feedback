@@ -46,16 +46,85 @@ RTC_DATA_ATTR int bootCount = 0;
 bool isLocked = false;
 int activePin = 0;
 
+void toggle_led(int LEDPin) {
+  isLocked = !isLocked;
+  activePin = LEDPin;
+  if (isLocked) {
+    digitalWrite(LEDPin, HIGH);
+  }
+  else {
+    digitalWrite(LEDPin, LOW);
+  }
+}
+
+void handleVeryGoodButton()
+{
+  if (buttonVeryGood.isPressed())
+  {
+    Serial.println("Very Good button pressed");
+    countdownStart = millis();
+    toggle_led(LED_LIGHT_1);
+  }
+}
+
+void handleGoodButton()
+{
+  if (buttonGood.isPressed())
+  {
+    Serial.println("Good button pressed");
+    countdownStart = millis();
+    toggle_led(LED_LIGHT_2);
+  }
+}
+
+void handleBadButton()
+{
+  if (buttonBad.isPressed())
+  {
+    Serial.println("Bad button pressed");
+    countdownStart = millis();
+    toggle_led(LED_LIGHT_3);
+  }
+}
+
+void handleVeryBadButton()
+{
+  if (buttonVeryBad.isPressed())
+  {
+    Serial.println("Very Bad button pressed");
+    countdownStart = millis();
+    toggle_led(LED_LIGHT_4);
+  }
+}
+
+void handleButtonPress()
+{
+  handleVeryGoodButton();
+  handleGoodButton();
+  handleBadButton();
+  handleVeryBadButton();
+}
 
 void print_GPIO_wake_up(){
   uint64_t GPIO_reason = esp_sleep_get_ext1_wakeup_status();
+  
   Serial.print("GPIO that triggered the wake up: GPIO:");
-  if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_15)) Serial.print(" 15");
-  if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_2))  Serial.print(" 2");
-  if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_4))  Serial.print(" 4");
-  if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_13)) Serial.print(" 13");
-  Serial.println();
-
+  if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_15)) {
+    Serial.print(" 15");
+    handleVeryGoodButton();
+  }
+  else if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_2)) {
+    Serial.print(" 2");
+    handleGoodButton();
+  }
+  else if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_4)) {
+    Serial.print(" 4");
+    handleBadButton();
+  }
+  else if (GPIO_reason & BUTTON_PIN_BITMASK(WAKEUP_GPIO_13)) {
+    Serial.print(" 13");
+    handleVeryBadButton();
+  }
 }
 
 void print_wakeup_reason(){
@@ -83,17 +152,6 @@ void print_wakeup_reason(){
     default:
       Serial.printf("Wakeup was not caused by deep sleep: %d\n", wakeup_reason);
       break;
-  }
-}
-
-void toggle_led(int LEDPin) {
-  isLocked = !isLocked;
-  activePin = LEDPin;
-  if (isLocked) {
-    digitalWrite(LEDPin, HIGH);
-  }
-  else {
-    digitalWrite(LEDPin, LOW);
   }
 }
 
@@ -145,6 +203,11 @@ void initTime(){
 void setup() {
   Serial.begin(115200);
 
+  pinMode(LED_LIGHT_1, OUTPUT);
+  pinMode(LED_LIGHT_2, OUTPUT);
+  pinMode(LED_LIGHT_3, OUTPUT);
+  pinMode(LED_LIGHT_4, OUTPUT);
+  
   initWiFi();
 
   // Setup time
@@ -155,11 +218,6 @@ void setup() {
   buttonGood.setDebounceTime(50);
   buttonBad.setDebounceTime(50);
   buttonVeryBad.setDebounceTime(50);
-  
-  pinMode(LED_LIGHT_1, OUTPUT);
-  pinMode(LED_LIGHT_2, OUTPUT);
-  pinMode(LED_LIGHT_3, OUTPUT);
-  pinMode(LED_LIGHT_4, OUTPUT);
 
   Serial.println("Boot number: " + String(bootCount));
   
@@ -178,26 +236,7 @@ void loop() {
   buttonVeryBad.loop();
 
   if(!isLocked){
-    if (buttonVeryGood.isPressed()){
-      Serial.println("Very Good button pressed");
-      countdownStart = millis();
-      toggle_led(LED_LIGHT_1);
-      }
-    if (buttonGood.isPressed()){
-      Serial.println("Good button pressed");
-      countdownStart = millis();
-      toggle_led(LED_LIGHT_2);
-    }
-    if (buttonBad.isPressed()){
-      Serial.println("Bad button pressed");
-      countdownStart = millis();
-      toggle_led(LED_LIGHT_3);
-    }
-    if (buttonVeryBad.isPressed()){
-      Serial.println("Very Bad button pressed");
-      countdownStart = millis();
-      toggle_led(LED_LIGHT_4);
-    }
+    handleButtonPress();
   }
   
   unsigned long elapsed = millis() - countdownStart;

@@ -4,6 +4,7 @@
 #include "time.h"
 #include "WiFi.h"
 #include <PubSubClient.h>
+#include <esp_sntp.h>
 
 // WiFi
 const char* ssid = "IoT_H3/4";
@@ -398,14 +399,13 @@ void initTime(){
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   Serial.print("Waiting for time sync");
 
-  // Time() returns seconds since 1970 epoch time.
-  // When startet it might be only a few seconds or 0
-  // If time jumps over over 57 600 seconds then time should be synced
-  time_t now = time(nullptr);
-  while (now < 8 * 3600 * 2) {
-    Serial.print(".");
-    delay(500);
-    now = time(nullptr);
+  unsigned long timer = millis();
+
+  while (sntp_get_sync_status() == SNTP_SYNC_STATUS_IN_PROGRESS) {
+    timer = millis();
+    if (timer % 1000 == 0) {
+      Serial.print(".");
+    }
   }
   Serial.println();
 }

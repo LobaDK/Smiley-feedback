@@ -152,7 +152,7 @@ void handleButtonPress()
 
 void print_GPIO_wake_up(){
   struct tm timesStamp;
-  if (!getLocalTime(&timesStamp)) {
+  if (getLocalTime(&timesStamp)) {
   uint64_t GPIO_reason = esp_sleep_get_ext1_wakeup_status();
   
   Serial.print("GPIO that triggered the wake up: GPIO:");
